@@ -54,8 +54,6 @@ useEffect(() => {
     images.forEach(img => formData.append('images', img));
 
     try {
-    
-      await new Promise(resolve => setTimeout(resolve, 5000));
 
       const response = await fetch('https://imgtopdf-7c0c.onrender.com/convert', {
         method: 'POST',
