@@ -32,21 +32,13 @@ const ImagePreview = ({ images, onRemove, onReplace }) => {
                 onClick={() => handleReplaceClick(idx)}
                 className="flex-1 text-sm bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded flex justify-center items-center"
               >
-                <img
-                  src="./src/Assests/swap.png"
-                  alt="replace-img"
-                  className="w-10 h-10"
-                />
+                Replace
               </button>
               <button
                 onClick={() => onRemove(idx)}
                 className="flex-1 text-sm bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded flex justify-center items-center"
               >
-                <img
-                  src="./src/Assests/delete.png"
-                  alt="delete-img"
-                  className="w-10 h-10"
-                />
+               Delete
               </button>
             </div>
 
