@@ -57,7 +57,7 @@ useEffect(() => {
     
       await new Promise(resolve => setTimeout(resolve, 5000));
 
-      const response = await fetch('https://imgtopdf-7c0c.onrender.com', {
+      const response = await fetch('https://imgtopdf-7c0c.onrender.com/convert', {
         method: 'POST',
         body: formData,
       });
