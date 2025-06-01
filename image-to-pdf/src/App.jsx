@@ -1,96 +1,198 @@
-import React, { useState, useEffect } from 'react';
-import Dropzone from './components/Dropzone';
-import ImagePreview from './components/ImagePreview';
-import ConvertButton from './components/ConvertButton';
-import DownloadButton from './components/DownloadButton';
+import React, { useState, useRef, useCallback } from 'react';
+import BackgroundAnimation from "./components/BackgroundAnimation";
+import ConverterMain from "./components/ConverterMain";
+import Header from "./components/Header";
+import Features from "./components/Features";
 import './App.css';
 
-function App() {
-  const [images, setImages] = useState([]);
-  const [url, setURL] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const  [hasConverted, setHasConverted] = useState(false);
+const App = () => {
+  const [currentType, setCurrentType] = useState('image-to-pdf');
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isConverting, setIsConverting] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef(null);
 
-useEffect(() => {
-  if (url) {
-    URL.revokeObjectURL(url);  
-    setURL(null);              
-    setHasConverted(false);    
-  }
-}, [images]);
+  const conversionTypes = {
+    'image-to-pdf': {
+      title: 'Convert Images to PDF',
+      subtitle: 'Upload your images and convert them to a single PDF document',
+      icon: '📷',
+      text: 'Click to upload images or drag and drop',
+      subtext: 'Supports JPG, PNG, GIF, BMP (Max 10MB each)',
+      accept: 'image/*',
+      multiple: true
+    },
+    'pdf-to-image': {
+      title: 'Convert PDF to Images',
+      subtitle: 'Extract pages from PDF files and convert them to high-quality images',
+      icon: '📄',
+      text: 'Click to upload PDF or drag and drop',
+      subtext: 'PDF files only (Max 50MB)',
+      accept: '.pdf',
+      multiple: false
+    },
+    'html-to-pdf': {
+      title: 'Convert HTML to PDF',
+      subtitle: 'Transform HTML content or web pages into professional PDF documents',
+      icon: '🌐',
+      text: 'Click to upload HTML or drag and drop',
+      subtext: 'HTML files only (Max 25MB)',
+      accept: '.html,.htm',
+      multiple: false
+    }
+  };
 
-  const handleDrop = (e) => {
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleTabClick = (type) => {
+    setCurrentType(type);
+    setSelectedFiles([]);
+    setDownloadUrl(null);
+    setIsConverting(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (indexToRemove) => {
+    setSelectedFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleClearAll = () => {
+    setSelectedFiles([]);
+    setDownloadUrl(null);
+    setIsConverting(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileSelect = (files) => {
+    const fileArray = Array.from(files);
+    setSelectedFiles(fileArray);
+  };
+
+  const handleFileInputChange = (e) => {
+    handleFileSelect(e.target.files);
+  };
+
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
-    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-    setImages(prev => [...prev, ...files]);
-      setHasConverted(false);
-  };
+    setIsDragOver(true);
+  }, []);
 
-  const handleBrowse = (e) => {
-    const files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
-    setImages(prev => [...prev, ...files]);
-      setHasConverted(false);
-  };
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
 
-  const handleRemoveImage = (index) => {
-    setImages(images.filter((_, i) => i !== index));
-  };
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    handleFileSelect(e.dataTransfer.files);
+  }, []);
 
-  const handleReplaceImage = (index, newFile) => {
-    const updatedImages = [...images];
-    updatedImages[index] = newFile;
-    setImages(updatedImages);
-    setHasConverted(false);
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
-
-  const handleConvert = async () => {
-    if (images.length === 0) {
-      alert('Please add images to convert');
+ 
+  const startConversion = async () => {
+    if (selectedFiles.length === 0) {
+      alert('Please select files first');
       return;
     }
-
-    setLoading(true);
-    const formData = new FormData();
-    images.forEach(img => formData.append('images', img));
-
+    setIsConverting(true);
+    setDownloadUrl(null);
     try {
-
-      const response = await fetch('https://imgtopdf-7c0c.onrender.com/convert', {
+      const formData = new FormData();
+      selectedFiles.forEach((file, index) => {
+        formData.append('files', file);
+      });
+      formData.append('conversionType', currentType);
+  
+      const response = await fetch('http://localhost:5000/convert', {
         method: 'POST',
         body: formData,
       });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        setURL(URL.createObjectURL(blob));
-        setHasConverted(true);
-      } else {
-        alert('Failed to convert images');
-      }
+      const data = await response.blob();
+      setDownloadUrl(URL.createObjectURL(data));
+      handleDownload();
     } catch (error) {
-      alert('Error during conversion: ' + error.message);
+      console.error('Conversion failed:', error);
+      alert('Conversion failed. Please try again.');
     } finally {
-      setLoading(false);
+      setIsConverting(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (downloadUrl) {
+      let filename = 'converted';
+      switch (currentType) {
+        case 'image-to-pdf':
+          filename += '.pdf';
+          break;
+        case 'pdf-to-image':
+          filename += '.zip';
+          break;
+        case 'html-to-pdf':
+          filename += '.pdf';
+          break;
+        default:
+          filename += '.pdf';
+      }
+      
+      // Create a temporary anchor element for download
+      const a = Object.assign(document.createElement('a'), {
+        href: downloadUrl,
+        download: filename,
+        style: { display: 'none' }
+      });
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 mt-10 bg-white shadow-lg rounded-xl">
-      <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">Image to PDF Converter</h1>
-      <Dropzone onDrop={handleDrop} onBrowse={handleBrowse} />
-      {images.length > 0 && (
-        <ImagePreview
-          images={images}
-          onRemove={handleRemoveImage}
-          onReplace={handleReplaceImage}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-600 to-purple-800 overflow-x-hidden font-sans">
+      <BackgroundAnimation />
+
+      <div className="max-w-6xl mx-auto px-8 py-8 relative z-10">
+        <Header />
+
+        <ConverterMain
+          conversionTypes={conversionTypes}
+          currentType={currentType}
+          selectedFiles={selectedFiles}
+          isConverting={isConverting}
+          downloadUrl={downloadUrl}
+          isDragOver={isDragOver}
+          fileInputRef={fileInputRef}
+          onTabClick={handleTabClick}
+          onFileInputChange={handleFileInputChange}
+          onUploadClick={handleUploadClick}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onConvert={startConversion}
+          formatFileSize={formatFileSize}
+          handleRemoveFile={handleRemoveFile}
+          handleClearAll={handleClearAll}
         />
-      )}
-      <div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-6">
-        <ConvertButton onClick={handleConvert} loading={loading} disabled={images.length === 0|| hasConverted} />
-        <DownloadButton url={url} />
+
+        <Features />
       </div>
     </div>
   );
-}
+};
 
 export default App;
