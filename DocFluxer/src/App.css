@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fade-in-up 1s ease-out forwards;
+}
+
+.delay-150 {
+    animation-delay: 0.15s;
+}
+
+.delay-300 {
+    animation-delay: 0.3s;
+}
+
+.delay-1000 {
+    animation-delay: 1s;
+}
+
+.delay-2000 {
+    animation-delay: 2s;
+}
+
+.border-3 {
+    border-width: 3px;
+}
+
+@media (max-width: 730px) {
+    .px-8 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .p-12 {
+        padding: 2rem;
+    }
+
+    .text-5xl {
+        font-size: 2.5rem;
+    }
+
+    .min-w-180 {
+        min-width: 250px;
+    }
+
+    .p-16 {
+        padding: 3rem 1rem;
+    }
+}
+
