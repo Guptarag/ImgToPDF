@@ -41,8 +41,8 @@ This project is a full-stack application that converts multiple images into a si
 ### Running the Frontend
 
 cd image-to-pdf
-npm install
-npm run dev
+## npm install
+## npm run dev
 
 Then open your browser at http://localhost:5173.
 ### Running the Frontend
